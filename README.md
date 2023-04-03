@@ -122,11 +122,3 @@ this means that when the "software agents" (ArgoCD in the case of an OpenShift p
 ### Solving "rough edges" problems
 
 ### Built-in secrets
-
-
-#### Contacts
-Mike Savage
-Dave Lindquist
-
-Talia Hooker
-
