@@ -129,6 +129,12 @@ The entry points for starting the pattern should probably be as close to OpenShi
 a case where there is no OpenShift available the Operator is clearly not an option but the Make mechanism still could
 be.
 
+In both scenarios we endevour to identify the smallest possible seed from which we can use GitOps principles to
+bootstrap the solution.
+
+We are also not in the business of writing OpenShift or AAP installers, and assume a pristine deployment of 
+either as a prerequisite.  Over time the pristine requirement is expected to be relaxed.
+
 ### Solving "rough edges" problems
 
 One of Ansible's great strengths is its flexibility in composing workflows; while this can pose certain problems for
