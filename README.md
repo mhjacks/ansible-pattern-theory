@@ -42,7 +42,7 @@ gear/sensor types mentioned previously.)
 * When a pattern has no administrative access to OpenShift, use the Ansible variant.
 * When a pattern has limited access to OpenShift, use the mechanism that allows the best access to a  single, self-contained entry point (likely the Ansible variant).
 
-## Ansible and the GitOps Principles
+## Ansible and the GitOps [Principles](https://opengitops.dev/)
 
 ### Declarative
 
@@ -109,16 +109,38 @@ repository project in AAP.
 
 This requirement means that the versioned configuration is periodically applied to the managed environment. In general,
 this means that when the "software agents" (ArgoCD in the case of an OpenShift pattern; AAP in the case of an Ansible Pattern) are responsible for recognizing a new commit and then applying that configuration. In Ansible, that means running
-
+units of work like playbooks and roles when the the authoritative git repo has been changed.
 
 ## Hybrid Cloud Patterns and AAP
+
+Given the definitions on [opengitops.dev](https://opengitops.dev/), we believe the Ansible Automation Platform, when
+configured with projects connected to Git repos and when configured to repeatedly apply units of work in those repos (that is, playbooks and roles in Ansible terms), meets the strict definition of GitOps.
 
 ## Other Considerations
 
 ### Testability
 
+One of the key requirements to be a validated pattern is that the solution must lend itself to automated testing.
+Testing on bare metal is a particularly thorny problem.
+
 ### Entry points and Pre-requisites for Ansible-based GitOps Patterns
+
+The entry points for starting the pattern should probably be as close to OpenShift GitOps patterns as possible; in
+a case where there is no OpenShift available the Operator is clearly not an option but the Make mechanism still could
+be.
 
 ### Solving "rough edges" problems
 
+One of Ansible's great strengths is its flexibility in composing workflows; while this can pose certain problems for
+maximum declarativeness, it also makes Ansible uniquely suited to solving some of the multiple cloud/multiple image
+problems that are inherent in the hybrid cloud story. Further, since Ansible does have good support for Kubernetes, it
+can be used to consume Kubernetes-based resources even in scenarios where a full admin environment in Kubernetes is
+not available.
+
 ### Built-in secrets
+
+AAP includes its own secret store. Finding a suitable secret store and handling secrets in a reasonable way was one of
+the biggest challenges we faced early in the Validated Patterns design effort. In an AAP-based pattern, we would most
+likely create credential types and credentials in the AAP instance, and use that as our authoritative secret store.
+There is also the possibility of having an early pattern that will include IdM, which might also be a useful mechanism
+for handling and managing certificate secrets, and possibly others.
