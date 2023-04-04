@@ -28,16 +28,15 @@ presence of OpenShift (which existing hybrid cloud patterns do).
 
 An entirely valid question might be, "what about when we have limited access to OpenShift?" (That is, access to a
 limited set of APIs or resources in one or more OpenShift clusters, but no administrative access to it or the ability
-to deploy operators and pods.) Since Ansible can also manage
-
-resources in Kubernetes, this might seem to be present a dilemma. In general, we recommend Kubernetes-based GitOps
-solutions to implement and manage GitOps; but we also recommend that hybrid cloud patterns be self-contained. If it is
-not possible to make a pattern "self-contained" from a well-documented and understood entry point, then it would be
-appropriate to consume Kubernetes resources with an Ansible-based framework. One such scenario might be using OpenShift
-Virtualization/Kubevirt for machine virtualization. The user of the pattern is given credentials/access to spin up VMs
-on the OpenShift Virtualization fabric, but does note have the ability to manage the fabric itself or install other
-operators or applications on the OpenShift cluster(s). In this (hypothetical, but plausible) situation, it would be
-acceptable to use this variant of the framework to drive the pattern.
+to deploy operators and pods.) Since Ansible can also manage resources in Kubernetes, this might seem to be present a
+dilemma. In general, we recommend Kubernetes-based GitOps solutions to implement and manage GitOps; but we also
+recommend that hybrid cloud patterns be self-contained. If it is not possible to make a pattern "self-contained" from
+a well-documented and understood entry point, then it would be appropriate to consume Kubernetes resources with an
+Ansible-based framework. One such scenario might be using OpenShift Virtualization/Kubevirt for machine virtualization.
+The user of the pattern is given credentials/access to spin up VMs on the OpenShift Virtualization fabric, but does not
+have the ability to manage the fabric itself or install other operators or applications on the OpenShift cluster(s). In
+this (hypothetical, but plausible) situation, it would be acceptable to use this variant of the framework to drive the
+pattern.
 
 * When starting from OpenShift, we recommend the OpenShift-based patterns framework. (This includes hybrid scenarios where OpenShift is available but elements of the pattern are non-Kubernetes manageable, such as the network
 gear/sensor types mentioned previously.)
