@@ -7,7 +7,7 @@ environments to Kubernetes cluster and multi-cluster management. GitOps finds it
 projects ArgoCD and FluxCD, which are designed and implemented to work with the Kubernetes API and represent the
 clearest expression of the GitOps principles.
 
-And yet, while Kubernetes is one of the most dramatically impactful and excitiing things to happen in the IT landscape
+And yet, while Kubernetes is one of the most dramatically impactful and exciting things to happen in the IT landscape
 in quite some time, it is not entirely pervasive; and there are key components of technology solutions that do not have
 a clear path to being managed under Kubernetes or Kubernetes APIs (consider, for example, network gear and sensors like
 IP cameras - it is hard to picture a scenario where network switches, routers, and access points would respond to the
@@ -27,7 +27,7 @@ OpenShift is available at all, there needs to be a different approach than one t
 presence of OpenShift (which existing hybrid cloud patterns do).
 
 An entirely valid question might be, "what about when we have limited access to OpenShift?" (That is, access to APIs
-or resources in one or mre OpenShift clusters, but not administrative access to it.) Since Ansible can also manage
+or resources in one or more OpenShift clusters, but not administrative access to it.) Since Ansible can also manage
 resources in Kubernetes, this might seem to be present a dilemma. In general, we recommend Kubernetes-based GitOps
 solutions to implement and manage GitOps; but we also recommend that hybrid cloud patterns be self-contained. If it is
 not possible to make a pattern "self-contained" from a well-documented and understood entry point, then it would be
@@ -162,7 +162,7 @@ and/or by webhook or other event driver; this satisfies the "Continuously reconc
 
 * Ansible-based Validated Patterns MAY include one or more work units that can be run on demand to modify (that is,
 add or remove elements from Ansible inventories, or else to trigger CI/CD-style pipeline runs. Elements added to
-inventories in this way must then be targetted by the automatically run work units, which are expected to be declarative
+inventories in this way must then be targeted by the automatically run work units, which are expected to be declarative
 with no or minimal side effects. In the same way, while the triggering of CI/CD pipelines may be done on demand, the
 pipelines themselves should be set up declaratively and immutably and be ready to run.
 
