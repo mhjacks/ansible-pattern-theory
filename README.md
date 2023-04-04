@@ -26,8 +26,10 @@ We propose this approach when the user is not in control of any OpenShift (Kuber
 OpenShift is available at all, there needs to be a different approach than one that starts with and assumes the
 presence of OpenShift (which existing hybrid cloud patterns do).
 
-An entirely valid question might be, "what about when we have limited access to OpenShift?" (That is, access to APIs
-or resources in one or more OpenShift clusters, but not administrative access to it.) Since Ansible can also manage
+An entirely valid question might be, "what about when we have limited access to OpenShift?" (That is, access to a 
+limited set of APIs or resources in one or more OpenShift clusters, but no administrative access to it or the ability
+to deploy operators and pods.) Since Ansible can also manage
+
 resources in Kubernetes, this might seem to be present a dilemma. In general, we recommend Kubernetes-based GitOps
 solutions to implement and manage GitOps; but we also recommend that hybrid cloud patterns be self-contained. If it is
 not possible to make a pattern "self-contained" from a well-documented and understood entry point, then it would be
