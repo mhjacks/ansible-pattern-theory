@@ -124,9 +124,10 @@ attribute from the shadow file; but the point of this example is that it is an u
 potential pitfalls in systems that were not designed from the beginning to be immutable and declarative in the way that
 OpenShift/Kubernetes is.
 
-This, we consider an inherent limitation of applying GitOps principles outside of the OpenShift/Kubernetes environment
-in which they were designed to apply, and accept the risk that these kinds of situations are possible in non-container
-native environments; efforts can be made to minimize these risks but it seems impossible to eliminate them entirely.
+Thus, we consider it an inherent limitation of applying GitOps principles outside of the OpenShift/Kubernetes
+environment in which they were designed to apply, and accept the risk that these kinds of situations are possible in
+non-container native environments; efforts can be made to minimize these risks but it seems impossible to eliminate
+them entirely.
 
 ### Pulled automatically
 
@@ -154,9 +155,9 @@ configured with projects connected to Git repos and when configured to repeatedl
 ## Proposed requirements/standards language
 
 * Ansible-based Validated Patterns MUST contain at least one version-controlled git repository that is synchronized into
-AAP through both webhooks and a polling cycle (that is, the repo is polled periodically and refreshed if it has
-changed, ensuring that the next time work units defined in that repository correspond to the new commit(s)). This
-satisfies the "Versioned and immutable" and "Pulled automatically" requirements to be considered GitOps.
+AAP with the "Update Revision on Launch" flag turned on. It MAY also be configured with webhooks and/or a polling cycle.
+This ensures that each time work units defined in that repository run, the work unit and repository will correspond to
+the latest commit(s) available. This satisfies the "Versioned and immutable" and "Pulled automatically" requirements to be considered GitOps.
 
 * Ansible-based Validated Patterns MUST contain one or more work units that are applied to inventories periodically
 and/or by webhook or other event driver; this satisfies the "Continuously reconciled" requirement for GitOps.
@@ -172,18 +173,19 @@ pipelines themselves should be set up declaratively and immutably and be ready t
 ### Testability
 
 One of the key requirements to be a validated pattern is that the solution must lend itself to automated testing.
-Testing on bare metal is a particularly thorny problem.
+Testing on bare metal is a particularly thorny problem. Given project constraints, we should demonstrate success in
+testing against virtual machines first, while providing a viable roadmap to testing on bare metal.
 
 ### Entry points and Pre-requisites for Ansible-based GitOps Patterns
 
-The entry points for starting the pattern should probably be as close to OpenShift GitOps patterns as possible; in
-a case where there is no OpenShift available the Operator is clearly not an option but the Make mechanism still could
+The entry points for starting the pattern should be as close to OpenShift GitOps patterns as possible; in a case where
+there is no OpenShift available the Operator is clearly not an option but the Make mechanism still could
 be.
 
 In both scenarios we endevour to identify the smallest possible seed from which we can use GitOps principles to
 bootstrap the solution.
 
-We are also not in the business of writing OpenShift or AAP installers, and assume a pristine deployment of 
+We are also not in the business of writing OpenShift or AAP installers, and assume a pristine deployment of
 either as a prerequisite.  Over time the pristine requirement is expected to be relaxed.
 
 ### Solving "rough edges" problems
@@ -201,3 +203,12 @@ the biggest challenges we faced early in the Validated Patterns design effort. I
 likely create credential types and credentials in the AAP instance, and use that as our authoritative secret store.
 There is also the possibility of having an early pattern that will include IdM, which might also be a useful mechanism
 for handling and managing certificate secrets, and possibly others.
+
+### Software Bill of Materials (SBOM) Considerations
+
+* The framework should provide guidance on how to determine whether code lives in the GitOps repository or in
+Automation Hub, since both options are possible with Ansible-based GitOps.
+
+* The framework should provide guidance on how to declare code dependencies for the framework. (For CI/CD systems, there
+is benefit to having "open" dependency declarations, since testing new builds of new roles and collections can indicate
+regressions; however, running open dependencies in production can lead to surprises and possibly regressions.)
