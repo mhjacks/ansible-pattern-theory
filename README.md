@@ -283,8 +283,9 @@ not available.
 AAP includes its own secret store. Finding a suitable secret store and handling secrets in a reasonable way was one of
 the biggest challenges we faced early in the Validated Patterns design effort. In an AAP-based pattern, we would most
 likely create credential types and credentials in the AAP instance, and use that as our authoritative secret store.
-There is also the possibility of having an early pattern that will include IdM, which might also be a useful mechanism
-for handling and managing certificate secrets, and possibly others.
+IdM also includes a "vault" feature, but this feature is not as flexible or generalized as the secret storage offered
+by AAP (IdM's vault features store a single "blob" per vault, while AAP's can store larger blobs and complex data
+types). For these reasons we prefer using the AAP vault for this purpose.
 
 ### Software Bill of Materials (SBOM) Considerations
 
