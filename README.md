@@ -223,7 +223,7 @@ to them to continually test their interoperability; and to do this in a hybrid m
 plan to include bare metal. There are numerous complications with testing different environments and in different clouds
 and the defined set of tools above abstracts and manages the lion's share of them. (Not all of them, admittedly, but
 architecturally, having Satellite to do compute provisioning makes a lot more sense than trying to import a different
-framework for that, or inventing a compleely new one; as Satellite already supports the major hyperscalers as well as
+framework for that, or inventing a completely new one; as Satellite already supports the major hyperscalers as well as
 all of the major on-prem hosting mechanisms, including bare metal).
 
 This also helps highlight the strength of OpenShift as a platform. Starting with a blank OpenShift cluster is,
