@@ -190,7 +190,7 @@ IdM is built first, and provides foundational infrastructure requirements, inclu
 Because these elements are central to other nodes being able to trust and find each other, this node must be built
 first.  (If the workload requires it, additional replicas can be built as part of the workload.)
 
-1. Satellite (Content and Provisioning Lifecycle)
+2. Satellite (Content and Provisioning Lifecycle)
 
 * Content hosting
 * Host registration
@@ -205,7 +205,7 @@ components onto Satellite, such that if we need to add additional Satellite capa
 need to build a more resilient or higher capacity AAP system, we can define that capability in Satellite rather than
 defining custom code per potential provider for it elsewhere in the framework.
 
-1. AAP (Ansible Automation Platform - the GitOps Engine)
+3. AAP (Ansible Automation Platform - the GitOps Engine)
 
 * GitOps capabilities
 * Secrets management
