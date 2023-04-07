@@ -168,6 +168,88 @@ inventories in this way must then be targeted by the automatically run work unit
 with no or minimal side effects. In the same way, while the triggering of CI/CD pipelines may be done on demand, the
 pipelines themselves should be set up declaratively and immutably and be ready to run.
 
+## Drawing Some Lines - Ansible-based Validated Patterns will define a "minimal set" as a starting point
+
+In light of this, we draw a distinction between the "infra" component of an Ansible-based Pattern, and the "workload"
+set of such a Pattern. By making this distinction, we make clear what should be common to all Ansible-based patterns,
+and hopefully simplify the task of post-pattern cleanup (which is vital for the "demo" aspect of VPs as well as for
+CI/CD testing). In broad terms, we should be able to tell the infra to clean up the workload components, and then have
+some special code to clean up the infra components. Thus, the minimal set will be the "infra" as specified below.
+
+## Defining the "minimal set" or "starting point" or "infra" for Ansible-based Validated Patterns
+
+1. IdM (Identity Management - DNS, PKI, and user management)
+
+IdM is built first, and provides foundational infrastructure requirements, including, particularly:
+
+* DNS management and registration
+* Certificate trust and management
+* User provisioning and management
+* Time synchronization
+
+Because these elements are central to other nodes being able to trust and find each other, this node must be built
+first.  (If the workload requires it, additional replicas can be built as part of the workload.)
+
+1. Satellite (Content and Provisioning Lifecycle)
+
+* Content hosting
+* Host registration
+* Node provisioning and deprovisioning (cloud, on-prem, bare metal)
+
+We build a single-node Satellite next, because it will be used to build all of the rest of the infrastructure and
+workload. Satellite gives us the ability to define content, including operating system levels and system-level
+configuration, in an abstract way. That is, we can use Satellite to apply policies to how compute will be built, and
+let Satellite worry about the differences between different hosting mechanisms (i.e. hyperscaler, on-prem, bare metal).
+By placing Satellite here in the hierarchy we offload the complexity of building any subsequent infra/workload
+components onto Satellite, such that if we need to add additional Satellite capacity (in the form of Capsules), or
+need to build a more resilient or higher capacity AAP system, we can define that capability in Satellite rather than
+defining custom code per potential provider for it elsewhere in the framework.
+
+1. AAP (Ansible Automation Platform - the GitOps Engine)
+
+* GitOps capabilities
+* Secrets management
+
+The final component of the minimal set is an AAP instance, which will drive workloads and gitops in both the infra
+and workload components of the pattern going forward. By default, it will consist of an "all-in-one" controller and
+a separate automation hub node. The workload components will be completely determined by GitOps flows, and changes to
+the infra components will also be managed via GitOps using the AAP instance.
+
+### Are you sure this is "minimal"?
+
+The goal of this effort is to do more than simply assert that GitOps is possible with Ansible and define how to do it -
+it also requires the ability to define and execute useful use cases on top of that platform that can have CI/CD applied
+to them to continually test their interoperability; and to do this in a hybrid multi-cloud environment, which we also
+plan to include bare metal. There are numerous complications with testing different environments and in different clouds
+and the defined set of tools above abstracts and manages the lion's share of them. (Not all of them, admittedly, but
+architecturally, having Satellite to do compute provisioning makes a lot more sense than trying to import a different
+framework for that, or inventing a compleely new one; as Satellite already supports the major hyperscalers as well as
+all of the major on-prem hosting mechanisms, including bare metal).
+
+This also helps highlight the strength of OpenShift as a platform. Starting with a blank OpenShift cluster is,
+architecturally speaking, a stronger starting point than a single blank RHEL server. The OpenShift cluster has much
+more inherent expandability, better resiliency characteristics, and the key advantage of running on an immutable
+Operating System that cleanly divides the workload from OS management. This proposed division of labor (into the
+"minimal set" and "workload" components) for Ansible-based patterns is an attempt at architectural equivalence in that
+regard, and even so, there is considerable additional effort required in the non-OpenShift space to provide resilience
+and fault-tolerance equivalent to what OpenShift provides.
+
+It is relevant to this discussion that we are coming into this design/development effort with a model implementation
+that considers the workload division problem in exactly this way. As of this initial treatment, there is an
+implementation that bootstraps IdM, Satellite, and AAP (in that order) on vmWare. It will take some work to generalize
+that, but rather less than it would to write a new framework entirely from scratch, or else integrating many different
+pieces and parts.
+
+It has always been our goal with Validated Patterns to provide artifacts that are genuinely useful, and adaptable to
+local requirements, while also being easily testable and verifiable. We believe that this approach gives us what we
+need to make and fulfill this promise in the hybrid multi-cloud environment that we know we must operate in.
+
+### Examples of infra/workload division (thought experiments)
+
+* Tang servers for Network Bound Disk Encyption (NBDE) - workload elements, not part of minimal set
+* HMI devices for Ignition Demo - workload elements, not part of minimal set (with proposed setup, could be configured
+as VMs or even as bare metal devices, using Satellite discovery and provisioning techniques)
+
 ## Other Considerations
 
 ### Testability
