@@ -217,6 +217,20 @@ the infra components will also be managed via GitOps using the AAP instance.
 
 ### Are you sure this is "minimal"?
 
+To be absolutely crystal clear - this is what we are defining as the miminal set for building a _framework_ with
+Ansible-based GitOps, such that we can build out additional resources in hybrid cloud environments (including on-prem
+and bare metal) and continue to test them on an ongoing basis. Many customers and users will already have the
+capabilities provided by Satellite and IdM already running in some capacity, or may provide those capabilities using
+different products or projects. But to be successful as a framework for testing reference architectures, the framework
+needs to provide the ability to bootstrap resources, including aspects of itself, and this is the set of things that
+is essential to doing that.
+
+To put it a slightly different way, Ansible GitOps is possible without Satellite and IdM - it requires, essentially,
+the capabilities listed in the Principles section (which AAP by itself provides, in conjunction with a Git hosting
+service). The Validated Patterns framework for Ansible GitOps uses IdM and Satellite to make such GitOps patterns
+testable from bootstrap in a number of scenarios (hyperscalers, on-prem, baremetal) that align with the Red Hat hybrid
+cloud vision.
+
 The goal of this effort is to do more than simply assert that GitOps is possible with Ansible and define how to do it -
 it also requires the ability to define and execute useful use cases on top of that platform that can have CI/CD applied
 to them to continually test their interoperability; and to do this in a hybrid multi-cloud environment, which we also
@@ -243,6 +257,14 @@ pieces and parts.
 It has always been our goal with Validated Patterns to provide artifacts that are genuinely useful, and adaptable to
 local requirements, while also being easily testable and verifiable. We believe that this approach gives us what we
 need to make and fulfill this promise in the hybrid multi-cloud environment that we know we must operate in.
+
+Historically, the first Validated Pattern we delivered was
+[Industial Edge](https://github.com/hybrid-cloud-patterns/industrial-edge) - which was and is not a minimalistic
+pattern. (Consciously so; the first pattern to demonstrate the framework had to be larger and more complex to show that
+the framework was useful for building larger artifacts.) The next pattern we delivered was
+[MultiCloud GitOps](https://github.com/hybrid-cloud-patterns/multicloud-gitops), which was a conscious effort to be
+more minimalistic in requirements and scope. We intend to provide paths to make use of the GitOps-ness of patterns in
+this Ansible-based framework without absolutely requiring the setup of new Satellite and/or IdM infrastructure.
 
 ### Examples of infra/workload division (thought experiments)
 
