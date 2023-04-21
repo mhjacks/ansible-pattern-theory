@@ -201,11 +201,12 @@ workload. Satellite gives us the ability to define content, including operating 
 configuration, in an abstract way. That is, we can use Satellite to apply policies to how compute will be built, and
 let Satellite worry about the differences between different hosting mechanisms (i.e. hyperscaler, on-prem, bare metal).
 By placing Satellite here in the hierarchy we offload the complexity of building any subsequent infra/workload
-components onto Satellite, such that if we need to add additional Satellite capacity (in the form of Capsules), or
-need to build a more resilient or higher capacity AAP system, we can define that capability in Satellite rather than
-defining custom code per potential provider for it elsewhere in the framework.
+components to the Satellite server, such that if we need to add additional Satellite capacity (in the form of Capsules), or
+need to build a more resilient or higher capacity AAP system, we can simply define that requirement in our infrastructure 
+configuration and have Satellite perform the work rather than defining custom code per potential provider elsewhere 
+in the framework.
 
-3. AAP (Ansible Automation Platform - the GitOps Engine)
+1. AAP (Ansible Automation Platform - the GitOps Engine)
 
 * GitOps capabilities
 * Secrets management
@@ -271,6 +272,10 @@ this Ansible-based framework without absolutely requiring the setup of new Satel
 * Tang servers for Network Bound Disk Encyption (NBDE) - workload elements, not part of minimal set
 * HMI devices for Ignition Demo - workload elements, not part of minimal set (with proposed setup, could be configured
 as VMs or even as bare metal devices, using Satellite discovery and provisioning techniques)
+* Standard Operating Environment Content pipelines - define, deliver, deploy, test and destroy RHEL based application 
+  workloads for SOE delivery to workload elements. E.g. jboss server, LAMP stack, web content server
+* Event driven launch of same using e.g. CVE criteria - > 3 unpublished CVEs of severity 7.0 or greater in Content View 
+  triggers pipeline.
 
 ## Other Considerations
 
@@ -279,6 +284,8 @@ as VMs or even as bare metal devices, using Satellite discovery and provisioning
 One of the key requirements to be a validated pattern is that the solution must lend itself to automated testing.
 Testing on bare metal is a particularly thorny problem. Given project constraints, we should demonstrate success in
 testing against virtual machines first, while providing a viable roadmap to testing on bare metal.
+(Comment: [PA] Bare metal workload is supported today. Satellite is configured for discovery and search criteria for bare metal
+Boot strap for bare metal has existed in the past and can be reproduced)
 
 ### Entry points and Pre-requisites for Ansible-based GitOps Patterns
 
