@@ -62,6 +62,8 @@ The next section details the major challenges faced in moving from vmWare to AWS
 
 ### Handling Network Infrastructure
 
+### On "split identities" in AWS
+
 ### Building the Ansible Environment for Installation
 
 ### ImageBuilder and AWS
@@ -74,8 +76,6 @@ The next section details the major challenges faced in moving from vmWare to AWS
 
 ## On being "opinionated"
 
-### On "split identities" in AWS
-
 ### Minimalism means different things for different use cases
 
 ### Timing considerations
@@ -86,11 +86,27 @@ The next section details the major challenges faced in moving from vmWare to AWS
 
 ## How to determine what is in the framework vs. what is part of a pattern?
 
+### Foreman/Satellite EC2 plugin limitations
+
+Our initial strategy in developing the framework was to build Satellite and IdM VMs (on a generic provider), and then use those VMs to provision additional compute, primarily enough AAP to run a pattern. Then, the framework would delegate further configuration and management responsibility to AAP to use the Satellite and IdM to build additional compute as needed. This was originally developed on vmWare, where the Satellite plugin for vmWare compute provisioning is widely used, well-understood, and full featured.
+
+We made the decision to follow the same basic strategy in AWS, without first validating that the Foreman/Satellite EC2 plugin was at feature parity with the other compute provider plugins. None of us had used the EC2 plugin before. As it turns out, the EC2 plugin was designed to be used in a somewhat more opinionated way than we planned to use it. Instead of being designed around a generic image, which would then be customized post-instance creation, the EC2 plugin seemds to have designed to deploy specific machine images in an almost-ready state. Specifically, it allows for the customization of which AMI is used to instantiate a VM, but it does not allow for any customization of storage beyond setting the initial AMI by the compute provider. (Of course, this can be done by workflows outside of Satellite, or by Ansible workflows in Satellite, given the right collections, roles and credentials.)
+
 ### Making the AAP Install more generic
+
+The "inherited" codebases both used the "bundle" strategy for installing AAP. This involves downloading an AAP .tar.gz bundle from the Red Hat Customer portal, which includes (currently) RPMs for both RHEL8 and RHEL9. This mechanism worked by retrieving the AAP bundle by SHA256; during development of the framework a new version of AAP 2.3 was released, which invalidated the included SHA. The process of downloading the bundle also implies the need to clean the bundle up (i.e. remove the original .tar.gz file and potentially also remove the repos and other contents once the product(s) are installed). The initial download could certainly have been expanded to support different AAP versions, but it was now possible to enable the appropriate AAP repository for the desired AAP version, RHEL version, and architecture, so we instead adapted this mechanism, since it did not require changing the inventory file itself, did not require and of the other cleanup pieces, and did not require the long-term maintenance of SHA signatures in the framework repo.
 
 ### Patterns and Security
 
-### Patterns and HA/Scaling
+The proper handling of secrets was one of the first major things we prioritized in the development of the Kubernetes Validated Patterns framework. We knew that we could not store secrets in git directly, and we were not comfortable storing encrypted secrets in git either, since this both eliminates the transparency of storing something in source control, and potentially invites attacks on those secrets, particularly if the repository is public. Yet, it is operationally important to manage secrets in a mechanism that hides them and keeps them safe while still allowing for their use. In the Kubernetes framework, we decided to use a secrets vault, but to make the primary mechanism of secrets usage the External Secrets Operator. In AAP, one of the core features of AAP is a secure secrets storage mechanism; additionally ansible-core encourages the use of the included ansible-vault utility to encrypt secrets at rest on the workstation.
+
+A second consideration on the security front is certificate trusts. We enforce encryption in flight in all of the places that we can; but since we cannot assume a trusted certificate chain to in place during pattern installation, we allow AAP (in particular, both Controller and Automation Hub) to be installed with the default self-signed Certificate Authorities. This is definitely an area where the framework can improve, and we would welcome such contributions.
+
+## Patterns and HA/Scaling
+
+The decision to not build a multi-node clustering environment for Ansible Automation Platform as part of the pattern framework was deliberate. It is more important for the pattern framework to be able to exercise the APIs and demonstrate how to interact with the services and objects inside the product.
+
+While scaling a product like AAP is interesting in and of itself, the scale questions tend to be particular to specific installation needs and network topologies. (For example, security considerations require that certain systems be firewalled from other systems, and this would potentially impact the AAP topology.) Different customers and users will have different requirements in these regards, and if they need help setting up such a system there are resources available to help them.  (Red Hat publishes a planning guide and installation guide for AAP to cover these questions.) Additionally, the intended scale of a system has no real bearing on the GitOps-ness of the solution in question. Finally, the framework supports the API-only installation mode, which can be used in conjunction with a scale-out AAP installation to apply an Ansible-based GitOps pattern to a cluster that is laid out differently than the single-node or two-node cluster topologies that the framework "knows" how to build.
 
 ## Determining Entry Points
 
