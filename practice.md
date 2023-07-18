@@ -244,13 +244,41 @@ One of the experience questions in running a setup like this is balancing the ne
 
 In this framework, we try to split the difference as much as we think we can. For example, we support the use of other AMIs for installation on AWS, so if the user has images that have pre-installed (and possibly somewhat pre-configured) software, they could be used to accelerate the time to get to demo time.
 
-The main code path is designed to exercise all of the installers; we do try to minimize the amount of of installation/configuration required for the base patterns. (For example, in the default Satellite installation, it started loading all of RHEL 8, RHEL 9, CentOS 7.9, AAP, and a demo to migrate from CentOS to RHEL using LEAPP; this could take multiple hours to synchronize content and publish content views)
-
-### Demo: Show the "Sizzle"
+The main code path is designed to exercise all of the installers; we do try to minimize the amount of of installation/configuration required for the base patterns. (For example, in the default Satellite installation, it started loading all of RHEL 8, RHEL 9, CentOS 7.9, AAP, and a demo to migrate from CentOS to RHEL using LEAPP; this could take multiple hours to synchronize content and publish content views). So the data structures are built now so that the default content set is just what is needed to build Satellite, IdM and AAP, but it is easy to add additional content if needed for a different reason or demo.
 
 ### TLS Verification
 
-## Making more compute
+TLS verification is also a tricky topic. Everyone wants to be able to verify TLS by default, but this can be challenging to achieve. All of the paths to do this involve extra setup, some of it extensive. Further, the organizations for which TLS verification is as an absolute mandate have very specific procedures for how to request and deploy certificates in those environments - and those are generally not easily replicable outside those environments. For much of the MVP's original development time, the expectation was that IdM would be available to all patterns, and that would allow for at least the pattern internally to be able to not skip TLS validation in any way.
+
+However, this approach has at least two problems:
+
+1. *It is not sufficient for solving the problem*. If we do build a certificate distribution system (like IdM) into the pattern framework, that builds a heavy bias towards IdM into the framework itself. What if a customer or organization prefers a different solution, like Active Directory or CyberArk Conjur or HashiCorp Vault? Should we model all those systems and offer them as options? And yet, even if we did, the CA for the system would only be trusted inside that system; it would not meet the security standards of some organizations without modifying system CA roots (or using the "organizational" CAs).
+1. *It builds a hard architectural dependency into the system that it is not clear that it needs*. If we were to build such a hard dependency into the system, it would require that all installations via the framework manage certificates; not all conceivable patterns need to manage certificates in this way, though. And certainly not all customers require that level of TLS verification.
+1. *It represents re-solving an already solved problem*. Organizations that have very strict TLS verification policies have procedures for how to request certs that are compliant with those policies. They know how to do that - The process of certificate management is generally not the focus of demos and patterns. This is one of the areas where a pattern is expected to need modification to run in a customer environment.
+
+Additionally, there are some external approaches to this problem (such as using LetsEncrypt, for example). LetsEncrypt is a fine solution for pattern instantiations that can reach LetsEncrypt; the addition of LetsEncrypt as an option would be beneficial to the framework but was not part of MVP.
+
+With this in mind, the framework currently selectively configures TLS verification (in particular, in how AAP is configured to use the container registry on the Automation Hub). If someone has a truly general solution to this problem, that would be a very exciting enhancement to the framework.
+
+## Abstracting compute
+
+One of the key things we wanted the framework to be able to do (in a reasonably platform/cloud-agnostic way) was to be able to provision more compute. If we did this with Satellite, it would have the advantage of vastly simplifying the process of deploying Red Hat content to that compute; additionally, Satellite has a pretty rich set of features across the compute lifecycle, including, especially, bare-metal and on-prem use cases, for which the Validated Patterns effort has been criticized. The ability to "make more compute" for the purpose of showing something in a pattern is definitely something we are interested in doing. Meanwhile, Satellite is a fairly big and complex product that requires resources that users may not have available easily on-site or portable.
+
+One of the major reasons for making Satellite one of the featured components in the first demo was to take steps towards enhancing the story for lifecycling edge/on-prem resources for use in these kinds of patterns. Rather than have the framework "known" how to deploy resources in every hyperscaler, we were hoping we could provide basic support for installing Satellite and then using an instance to provision the other compute we might need. (It would conceptually be possible to create a VPN or use some other scheme to use a remote Satellite for some on-site/bare metal use cases.) This work is post-MVP, but the idea of enhancing our ability to run Validated Patterns on bare metal is still a very important goal for us.
+
+Very late in the MVP development cycle, we learned that there was a limitation in the Satellite EC2 plugin that prevented us from being able to use it quite the way we wanted to on AWS. (Other compute provider plugins seem to not be subject to the same limitation.) We are working with upsteam to see if they are willing to add the features needed.
+
+## Handling "Bare Metal"
+
+As distinct from the issue of "abstracting compute", one question that came up in the first internal demo we did of the framework was whether it supported running "on prem" or on bare metal. While the intention was always to have a bare-metal/on-prem story for the framework, it was quite clear that as of the time of the demo, there was not a clear entry point that did not envision running the whole framework on AWS.
+
+Thankfully, it was straightforward to add those entry points, and now the framework supports three entry points (in increasing levels of opinionatedness):
+
+1. *API Install:* Given an installed AAP controller, credentials, and an entittlement manifest, entitles and configures the AAP instance. Suitable for use in all situations where the AAP topology that the framework deploys is not what the customer/user wants or needs.
+1. *From OS Install:* Given one or two RHEL instances (one for AAP, one (optionally) for Automation Hub), installs and configures AAP and (optionally) Automation Hub on those VMs, and entitles and configures them (minimally), before handing them over to the controller_configuration configuration scheme. Suitable for situations where the user/customer wants to use the framework but the means of provisioning instances for the framework are not what the customer/user wants. 
+1. *Default Install:* This installation requires AWS credentials and some additional parameters to install AAP, and (optionally) Automation Hub in a new VPC on AWS. Also entitles and configures them.
+
+The first two entry points will work with bare metal/on prem deployments.
 
 ## How to determine what is in the framework vs. what is part of a pattern?
 
