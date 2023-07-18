@@ -268,18 +268,6 @@ One of the major reasons for making Satellite one of the featured components in 
 
 Very late in the MVP development cycle, we learned that there was a limitation in the Satellite EC2 plugin that prevented us from being able to use it quite the way we wanted to on AWS. (Other compute provider plugins seem to not be subject to the same limitation.) We are working with upsteam to see if they are willing to add the features needed.
 
-## Handling "Bare Metal"
-
-As distinct from the issue of "abstracting compute", one question that came up in the first internal demo we did of the framework was whether it supported running "on prem" or on bare metal. While the intention was always to have a bare-metal/on-prem story for the framework, it was quite clear that as of the time of the demo, there was not a clear entry point that did not envision running the whole framework on AWS.
-
-Thankfully, it was straightforward to add those entry points, and now the framework supports three entry points (in increasing levels of opinionatedness):
-
-1. *API Install:* Given an installed AAP controller, credentials, and an entittlement manifest, entitles and configures the AAP instance. Suitable for use in all situations where the AAP topology that the framework deploys is not what the customer/user wants or needs.
-1. *From OS Install:* Given one or two RHEL instances (one for AAP, one (optionally) for Automation Hub), installs and configures AAP and (optionally) Automation Hub on those VMs, and entitles and configures them (minimally), before handing them over to the controller_configuration configuration scheme. Suitable for situations where the user/customer wants to use the framework but the means of provisioning instances for the framework are not what the customer/user wants. 
-1. *Default Install:* This installation requires AWS credentials and some additional parameters to install AAP, and (optionally) Automation Hub in a new VPC on AWS. Also entitles and configures them.
-
-The first two entry points will work with bare metal/on prem deployments.
-
 ## How to determine what is in the framework vs. what is part of a pattern?
 
 ### Foreman/Satellite EC2 plugin limitations
@@ -303,6 +291,18 @@ A second consideration on the security front is certificate trusts. We enforce e
 The decision to not build a multi-node clustering environment for Ansible Automation Platform as part of the pattern framework was deliberate. It is more important for the pattern framework to be able to exercise the APIs and demonstrate how to interact with the services and objects inside the product.
 
 While scaling a product like AAP is interesting in and of itself, the scale questions tend to be particular to specific installation needs and network topologies. (For example, security considerations require that certain systems be firewalled from other systems, and this would potentially impact the AAP topology.) Different customers and users will have different requirements in these regards, and if they need help setting up such a system there are resources available to help them.  (Red Hat publishes a planning guide and installation guide for AAP to cover these questions.) Additionally, the intended scale of a system has no real bearing on the GitOps-ness of the solution in question. Finally, the framework supports the API-only installation mode, which can be used in conjunction with a scale-out AAP installation to apply an Ansible-based GitOps pattern to a cluster that is laid out differently than the single-node or two-node cluster topologies that the framework "knows" how to build.
+
+## Handling "Bare Metal"
+
+As distinct from the issue of "abstracting compute", one question that came up in the first internal demo we did of the framework was whether it supported running "on prem" or on bare metal. While the intention was always to have a bare-metal/on-prem story for the framework, it was quite clear that as of the time of the demo, there was not a clear entry point that did not envision running the whole framework on AWS.
+
+Thankfully, it was straightforward to add those entry points, and now the framework supports three entry points (in increasing levels of opinionatedness):
+
+1. *API Install:* Given an installed AAP controller, credentials, and an entittlement manifest, entitles and configures the AAP instance. Suitable for use in all situations where the AAP topology that the framework deploys is not what the customer/user wants or needs.
+1. *From OS Install:* Given one or two RHEL instances (one for AAP, one (optionally) for Automation Hub), installs and configures AAP and (optionally) Automation Hub on those VMs, and entitles and configures them (minimally), before handing them over to the controller_configuration configuration scheme. Suitable for situations where the user/customer wants to use the framework but the means of provisioning instances for the framework are not what the customer/user wants. 
+1. *Default Install:* This installation requires AWS credentials and some additional parameters to install AAP, and (optionally) Automation Hub in a new VPC on AWS. Also entitles and configures them.
+
+The first two entry points will work with bare metal/on prem deployments.
 
 ## Determining Entry Points
 
