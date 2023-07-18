@@ -222,15 +222,33 @@ Thus, what ships in the framework MVP is building a single-filesystem image for 
 
 ### Refactoring (pre-init now means more than ImageBuild'ing)
 
+When we first started developing this, we did so with labbuilder2 in the state it currently existing - the process began with the buildimage phase - and everything that was prior to idm/satellite and host installation had only one stage to happen in was the buildimage stage. We agreed that we needed to introduce a new phase to handle the environment initialization.
+
+This necessitated moving code out of buildimage and into init_env when it was created, and the discovery that I had made some bad assumptions about what would and would not be defined at what time in that process. If I had it to do over, I would have tried to recognize the need for a new phase earlier and not committed as much to the "wrong" phase.
+
 ### cloud-init and hostnames
 
-## On being "opinionated"
+By default, cloud-init is liable to change the hostname of a VM on AWS. This can cause problems, especially with products like IdM which expect durable and consistent hostnames. Disabling this behavior is straightforward with cloud-init; this code runs by default in framework when setting up VMs in AWS:
 
-### Minimalism means different things for different use cases
+```yaml
+- name: 'Ensure hostname-setting can persist (thanks, cloud-init)'
+  ansible.builtin.lineinfile:
+    path: '/etc/cloud/cloud.cfg'
+    regexp: '^\s*preserve_hostname:'
+    line: 'preserve_hostname: true'
+```
 
 ### Timing considerations
 
+One of the experience questions in running a setup like this is balancing the need for the pattern/framework to show a realistic use case versus the need to get up and running quickly. The process of installing and configuring products can be rather lengthy (hours); for a demo typically we want to accelerate this process as much as possible; for the purpose of testing the installation process, we want to execute the installation process as thoroughly as possible to reveal potential regressions and other problems.
+
+In this framework, we try to split the difference as much as we think we can. For example, we support the use of other AMIs for installation on AWS, so if the user has images that have pre-installed (and possibly somewhat pre-configured) software, they could be used to accelerate the time to get to demo time.
+
+The main code path is designed to exercise all of the installers; we do try to minimize the amount of of installation/configuration required for the base patterns. (For example, in the default Satellite installation, it started loading all of RHEL 8, RHEL 9, CentOS 7.9, AAP, and a demo to migrate from CentOS to RHEL using LEAPP; this could take multiple hours to synchronize content and publish content views)
+
 ### Demo: Show the "Sizzle"
+
+### TLS Verification
 
 ## Making more compute
 
