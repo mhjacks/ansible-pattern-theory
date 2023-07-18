@@ -34,6 +34,39 @@ Another thing we learned in the process of developing this framework is how much
 
 Despite some of the limitations of non-Kubernetes targets for configuration management, we recognized that, in the first place, we already have an answer for how to apply GitOps patterns to Kubernetes. What we lacked was an understanding of how to apply the same philosophy to things that were not Kubernetes. In the second place, many devices that will be part of the technology landscape for years still to come do not have a path to being managed by a Kubernetes-based API (network devices like switches, routers, and access points; many "edge" devices that handle redundancy in a very different way than by making the devices themselves redundant); and even if everything in the technology landscape had a path to being managed by Kubernetes, it would still be decades before the last non-Kubernetes device would be retired.
 
+## On Repeatability
+
+It was very important, in order to achieve the goal of "testability" for this framework, to enable it to rebuild reliably and repeatably - to be able to build from literally nothing but credentials; to be able to manufacture infrastructure, install products on it, configure the products to do something interesting and useful, and then also to be able to (in that case) tear everything down again, and then rebuild it all.
+
+## On Tooling
+
+We made a conscious decision early to keep the tooling used in the framework itself within the Red Hat ecosystem (in terms of products and projectts that were largely sponsored or supported by Red Hat). So while we could have used Terraform (for example) to install AWS resources, and that might have been easier/more straightforward, we made a conscious decision not to do so.
+
+Our reasoning went like this:
+
+* This framework is to show off Ansible
+* Ansible can "automate everything"
+* Using Ansible throughout simplifies the tooling necessary to install
+
+AAP also includes some critical infrastructure for running patterns; in particular a secrets store (built into AAP) and a container registry (Automation Hub).
+
+In terms of scaffolding (that is, the parts of the framework that exist only to help build a pattern, but not really part of the pattern itself),
+the amazon.aws collection from Galaxy is well-maintained and widely used; and there was already example code (in ansible-workshops) that used it extensively. We had always intended on featuring Validated Content for configuring the Red Hat product elements of patterns whereever possible.
+
+## Analogies to openshift-install
+
+Many of the technical decisions in the MVP of the framework were guided by analogies with the Kubernetes/OpenShift-based Validated Patterns framework. For that, the assumption on install is that the user will provide the pattern a "blank" (i.e. freshly installed) OpenShift cluster. The pattern framework then installs the Pattern Operator and the Pattern Operator installs the selected pattern.
+
+There are not exact analogs to this mechanism in the OS-instance world. There are many, many ways to provision nodes, such as PXEboot, image-based instantiation, network install...and one of the key architectural guideposts we have used on the Validated Patterns team is "we don't write installers." To us, that means we do not write _platform_ level installers; we did not want to spend a lot of time figuring out how to install OpenShift in particular but to focus on how to do interesting things with it once it was installed. We recognized immediately that we would have to interact at least a bit with installation processes to make OS instances. This also provided some implicit guidance as to which pieces of the project were (and had to be) truly GitOps and what did not. In the OpenShift/Kubernetes framework, everything prior to the Pattern Operator install is pre-GitOps; the framework is not particularly opinionated on how OpenShift itself is installed; it expects a freshly installed cluster, and a kubeadmin KUBECONFIG to configure the cluster with.
+
+This provided a useful scheme to follow when developing the Ansible-based framework. In order to claim "Validated" for the patterns to be built with this framework, the patterns have to be testable. For the sanity of all involved, it is convenient for the framework to be able to make its own OS instances, though it cannot absolutely mandate that it only work with such instances. Inside Red Hat, AWS is commonly used by Engineering for developing and testing solutions; it is also widely used by customers and users.
+
+Thus, the framework repo itself became (mostly) the analog to openshift-install; everything it does (short of handing the configuration off to AAP) is to prepare the pattern to run, but is not expected to be essential to the pattern itself. It is scaffolding to simplify the process of QE for the pattern as it provides defaults for sizing and to run the necessary software in a standard, supported topology.
+
+At the first demo of the framework, we were reminded again about the importance of running on bare metal/on-prem resources. So we made additional, explicit entry points for an "API-only" installation (i.e. the customer/user has configured and are bringing your own AAP controller) as well as a "From-OS" installation (i.e. the customer/user has one or two "blank" VMs to install the AAP software on).
+
+From an architectural standpoint, the framework itself is a minimally-opinionated way of entitling and then applying the controller_configuration collection to an AAP installation; it supports some conveniences for installing some extra features (mostly driven by the initial use case). The main goal is to enable a wide range of uses.
+
 ## Ansible Edge GitOps - Halfway There
 
 The first entry of Ansible into the Validated Patterns framework came with the development of the [Ansible Edge GitOps](https://github.com/hybrid-cloud-patterns/ansible-edge-gitops). We recognized as a team that it would be good to show how Ansible fit into the overall portfolio vision, and to show in some way that GitOps could also apply to technologies that were not Kubernetes. The initial configuration mechanism for AAP in Ansible Edge used resources and state on the installation workstation (or "provisioner node", if you prefer) to configure AAP itself, including loading secrets directly into AAP, as opposed to loading them from HashiCorp Vault and published into the cluster via the External Secrets Operator, as we were doing with the other patterns. Near the end of the initial Ansible Edge development cycle, the engineering manager challenged me to move as much of that configuration into the cluster as possible.
@@ -84,10 +117,108 @@ At the time of this writing, the framework does all of its "internal" identifica
 
 ### Building the Ansible Environment for Installation
 
+All parties agreed that one of the elements to highlight in this project is the concept of Validated Content in Ansible. These are Red Hat-curated and supported roles and collections, which are accessible to Red Hat subscribers. (These roles and collections are maintained upstream as well, but the upstream versions are not tested like the downstream ones.) Ansible content is published in Galaxy; most ansible users are accustomed to using [https://galaxy.ansible.com](https://galaxy.ansible.com), which is the public galaxy instance. Use of Validated Content requires the use of custom Galaxy endpoints, and this requires a customized ansible.cfg. Further, the ansible.cfg file itself cannot be "stacked" (that is, a system-wide config file with overrides in user homedir or per-project) - ansible will consult exactly one ansible.cfg per invocation. The credential for accessing a private Galaxy instance (a token) must be stored in the ansible.cfg file itself.
 
-### ImageBuilder and AWS
+Taken together, this means:
+
+* We cannot store ansible.cfg in the project repo (since it would have to include a user-specific secret, the token)
+* Every user's ansible.cfg could potentially be different
+
+This meant that we needed to templatize the ansible.cfg file and generate it before anything else happens. Only then could we install the collection requirements and proceed with the installation.
+
+### ImageBuilder and AWS (vs. ImageBuilder and vmWare)
+
+ImageBuilder is a Red Hat Console [service](https://console.redhat.com/insights/image-builder) that allows customers and users to build images that are customized for various usages. The service will generate an image and offer it for download (if it is for an on-prem technology, like an ISO or vmWare image), or, in the case of a hyperscaler, it will upload the image to the hyperscaler and associate it with a customer account (as in the case of AWS).
+
+The building of the image requires the use of a Red Hat SSO token. These SSO tokens (at the time of this writing) have a lifetime of 15 minutes. Building an image for vmware (and downloading it) takes something less than 15 minutes, consistently (so the SSO token would never expire when building a vmware image). We found that building and uploading an image to AWS frequently took 12-17 minutes. This meant that the image build/upload service would intermittently fail. (The imagebuilder service itself was not failing, the token would expire, and the API that was checking on the build status would error out because the user became "unauthorized" if the timeout expired.)
+
+This required refactoring the Ansible code that invokes the imagebuilder service to periodically re-request an SSO token; as currently implemented it requests a token every 10 minutes, and tries 4 times until either the image is built or errors out.
+
+The refactoring uses the Ansible "task calls itself" pattern, which is a nice way of handling nested looping conditions in situations like this.
 
 ### ImageBuilder, cloud-init and LVM (or, Did you know that `lsblk` has a JSON output mode?)
+
+Another challenge we ran into where images differ between AWS and vmware is how disk images are "expanded". For a piece of software like Satellite, there are many operational benefits to using LVM (Logical Volume Managemnt), because users often need to add storage capacity without wanting to re-install the product.
+
+cloud-init is a project (primarily maintained by Canonical, the makers of Ubuntu) that simplifies many of the mundane administration tasks of administering image-based systems, such as dynamically growing partitions, and updating hostnames (both of which caused interesting complications for our framework).
+
+For sensible reasons, ImageBuilder builds disk images with GPT partition types. This makes sense; BIOS partitioning does not support volume size larger than 2 TB; and UEFI systems require GPT partitions. GPT partition tables include two copies of the partition table itself - one at the beginning of the disk, one at the end.
+
+Meanwhile, when building an LVM image (which ImageBuilder does by default when the user asks for specific mountpoints and sizes for specific filesystems, such as `/home` or `/var`), what ImageBuilder does is build the smallest image it can that includes the requested filesystems; typically around 10GB. This then becomes the _entire_ disk image that is uploaded to AWS.
+
+On AWS, you can request any size of boot volume for your VMs. Additionally, AWS VMs do not have the disincentives some hyperscalers do for using the boot volume for storing stateful data. So it is common to install AWS boot volumes of 30 GB, 40 GB, or even 500 GB (if your workload requires it - and Satellite can definitely require it). Meanwhile, block device names differ in AWS based on instance type. Some use the traditional, Xen-based `/dev/xvda` naming, larger types can use newer `/dev/nvmep0` naming. You normally only have to care if you want to resize the partition table.
+
+For AWS AMIs, ImageBuilder works by creating an EBS-based AMI (so, the image itself, the AMI, is stored as a block volume; to instantiate a new image this AMI is copied to the new block volume requested as the boot volume for the AWS VM. The boot image for the VM can be larger than the AMI; if so, the image will be copied to the new block volume and will "end" in the middle of the new block volume.) Meanwhile, GNU parted (the standard tool for handling repartitioning on Linux disks) will ordinarily refuse to operate on a GPT partition table that it sees as misaligned (that is, with the second partition table in the middle of the disk). This is only a problem with LVM, which is a multi-stage process that cloud-init does not handle gracefully (reportedly, Canonical has not prioritized LVM support in cloud-init).
+
+Taken together, this means:
+
+* GPT partitions are not negotiable for ImageBuilder
+* AWS VMs can be created with widely varying boot volume sizes (and widely varying block device names)
+* If your AWS boot volume uses LVM, it will be limited in space to the size of the AMI, not to the actual boot volume size
+
+This is an absolute non-starter for installing Satellite (which requires a lot more than 10 GB of disk space).
+
+At this point we have two choices:
+
+* Figure out how to repartition the LVM installation on the EBS
+* Abandon LVM for AWS images and allow the dynamic partition growth behavior of cloud-init
+
+Wanting to maintain best practices in Satellite installation, we went down the first path first. While `parted` (which the community Ansible collection uses by default) does not support re-writing a misaligned partition table directly, another tool, `sgdisk`, does. This then allows for the the LVM Physical Volume (PV, which is sensibly created by ImageBuilder as the last partition on the disk, despite being numbered 2) to be resized as expected. The system does not need to be rebooted when making these changes.
+
+The first effort assumed `/dev/xvda` naming for all disks in AWS, which broke when applied to an r5a.xlarge instance for Satellite, which used `/dev/nvme` naming, which also adds a `p` before the partition number. We _could_ regex for the partition number...but a wise man on the internet once said, ["Some people, when confronted with a problem, think "I know, I'll use regular expressions." Now they have two problems."](https://www.jwz.org/blog/2014/05/so-this-happened/). Who knows what will happen with device names in the future? I did not want to have to deal with the unknown scenario, or even with device names differing by region or availability zone.
+
+What we _do_ know in the ImageBuilder AMI scenario is that the volume grooup is built with a predictable name, and it will be created with a single physical volume. We can use that information to determine which disk needs to be repartitioned. In looking at man pages, this is where I learned that `lsblk` has a JSON output mode, which can be used by Ansible to make some crucial determinations about which devices to apply the operations to. The final solution looks like this:
+
+```yaml
+---
+- name: "Get block device layout from lsblk"
+  ansible.builtin.command: |-
+    lsblk -s -J
+  register: lsblk_info
+
+- name: "Read the JSON from lsblk_info"
+  ansible.builtin.set_fact:
+    lsblk_devtree: '{{ lsblk_info.stdout | from_json }}'
+
+- name: "Find our volume group using the root logical volume name"
+  ansible.builtin.set_fact:
+    lsblk_vgtree: "{{ lsblk_devtree['blockdevices'] | selectattr('name', '==', rootvg_rootlvname) | first }}"
+
+- name: "Determine block devices of interest"
+  ansible.builtin.set_fact:
+    rootvg_pv_blockdev: "{{ lsblk_vgtree['children'][0]['name'] }}"
+    rootvg_blockdev: "{{ lsblk_vgtree['children'][0]['children'][0]['name'] }}"
+
+- name: "Re-arrange GPT - imagebuilder image leaves backup in the wrong place on disk"
+  ansible.builtin.command: |
+    sgdisk -e /dev/{{ rootvg_blockdev }}
+    partprobe
+
+- name: "Resize lvm partition {{ rootvg_blockdev_partition }} to fill disk {{ rootvg_blockdev }}"
+  community.general.parted:
+    device: '/dev/{{ rootvg_blockdev }}'
+    number: '{{ rootvg_blockdev_partition }}'
+    label: 'gpt'
+    state: present
+    part_end: "100%"
+    resize: true
+
+- name: "pvresize the physical volume for volume group {{ rootvg_name }}"
+  community.general.lvg:
+    vg: '{{ rootvg_name }}'
+    pvs: '/dev/{{ rootvg_pv_blockdev }}'
+    pvresize: true
+```
+
+This works. There are reasons to use this, if you have to live long-term with machines that are built to this spec. It seems like it will not be obviously fragile as long as GPT, AMIs and ImageBuilder all maintain the same behaviors, and as long as cloud-init does not change. But that is a lot of variables.
+
+If we build a non-LVM image, and just let the VM use it all as a unified `/`, what happens?
+
+* This enables us to build and use a single ImageBuilder image for all machines in the pattern, regardless of storage size
+* This eliminates a weird and potentially really painful friction point should any of the documented behaviors change
+* The pattern framework is about building infrastructure so we can test it; long-term durability is not the focus of the framework (it is an important aspect of operations)
+
+Thus, what ships in the framework MVP is building a single-filesystem image for AWS; the code for handling LVM expansion is still in the project and usable but it is not the default code path.
 
 ### Refactoring (pre-init now means more than ImageBuild'ing)
 
