@@ -62,9 +62,28 @@ The next section details the major challenges faced in moving from vmWare to AWS
 
 ### Handling Network Infrastructure
 
+The first major difference that appeared between the vmWare codebase and what we needed to make the system work in AWS was network configuration and setup. The vmWare codebase assumed a pre-existing static network and DNS configuration. AWS configurations do not work like that - for reasonable isolation in AWS, the best practice is to set up your own Virtual Private Cloud with subnets and security groups. Further, AWS guarantees stable "private" IPs on those subnets (note, not "static"). Additionally, AWS offers standard public IP addressing, but those external IP addresses change when the VM they are associated with cold starts. (Elastic IP Addresses, which are static for a VM allocation, are available, but they have an additional cost associated.)
+
+Thus, the differences look like this:
+
+| Category | vmWare | AWS |
+| -------- | ------ | --- |
+| IP allocation scheme | static | DHCP |
+| IP type  | single, private | dual, private and public | 
+| Default Gateway | static | DHCP-assigned |
+| DNS resolver | static | DHCP-assigned |
+| Public IP?  | No | AWS-assigned (visible through AWS CLI/API) |
+
 ### On "split identities" in AWS
 
+The public/private split in AWS was challenging because we wanted to highlight the use of IdM. If we use private IP addressing, we would be able to show IdM without having to worry about public IP addressing, but this would mean running a "split" configuration, where machines would be accessible using names that they were not necessarily aware of. (That is, using route53-managed DNS entries in AWS that the machines themselves did not know or update directly.)
+
+There are ways to manage this; AAP was not actually running until (what may strike the reader as) late in the framework development, primarily as a consequence of resolving the vmware/AWS differences. Using AWS in a GitOps fashion to watch and maintain route53 DNS entries is a straightforward (and seemingly not difficult) extension to the framework, which also has prior art in the ansible-workshops project, and something that would either be a welcome contribution or a priority for the next iteration beyond the (current) MVP.
+
+At the time of this writing, the framework does all of its "internal" identification based on a `pattern_dns_zone`, which is not expected to be the same as the route53 managed zone. There is a `fix_aws_dns.yml` play that can be run on-demand to fix route53 DNS entries if needed, but no provision currently for injecting that into the pattern framework and running in periodically.
+
 ### Building the Ansible Environment for Installation
+
 
 ### ImageBuilder and AWS
 
